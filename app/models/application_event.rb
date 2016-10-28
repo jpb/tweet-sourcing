@@ -16,9 +16,11 @@ class ApplicationEvent < RailsEventStore::Event
   end
 
   def self.call(data)
-    ActiveRecord::Base.transaction do
-      event = self.new(data: data)
-      EventStore.publish_event(event)
+    ApplicationRecord.as_mutable do
+      ActiveRecord::Base.transaction do
+        event = self.new(data: data)
+        EventStore.publish_event(event)
+      end
     end
   end
 
