@@ -5,8 +5,10 @@ class ApplicationEvent < RailsEventStore::Event
   end
 
   def initialize(event)
+    data = self.class.const_get('Data').new(event[:data])
+    data.validate!
+    event[:data] = data.to_h
     super(event)
-    self.class.const_get('Data').new(self.data).validate!
   end
 
   def self.subscribe(&block)
@@ -14,8 +16,10 @@ class ApplicationEvent < RailsEventStore::Event
   end
 
   def self.call(data)
-    event = self.new(data: data)
-    EventStore.publish_event(event)
+    ActiveRecord::Base.transaction do
+      event = self.new(data: data)
+      EventStore.publish_event(event)
+    end
   end
 
 end
